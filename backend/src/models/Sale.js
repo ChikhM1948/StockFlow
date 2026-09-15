@@ -20,7 +20,7 @@ const saleSchema = new mongoose.Schema(
   {
     brand: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand', required: true, index: true },
 
-    saleNumber: { type: String, required: true, unique: true }, // ex: FAC-2026-0001
+    saleNumber: { type: String, required: true }, // ex: FAC-2026-0001 (unique par marque, cf. index composé ci-dessous)
 
     distributor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
 
@@ -54,5 +54,9 @@ const saleSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// saleNumber est généré par marque (cf. generateDocNumber), donc unique
+// seulement par marque, pas globalement : deux marques ont chacune leur "FAC-2026-0001".
+saleSchema.index({ brand: 1, saleNumber: 1 }, { unique: true });
 
 module.exports = mongoose.model('Sale', saleSchema);

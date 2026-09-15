@@ -1,7 +1,9 @@
 const express = require('express');
-const { protect, authorize } = require('../middleware/auth.middleware');
+const { protect, authorize, requireActiveBrand } = require('../middleware/auth.middleware');
 const {
   onboardBrandAdmin,
+  startTrial,
+  activateBrand,
   createDistributor,
   listDistributors,
   login,
@@ -11,9 +13,11 @@ const {
 const router = express.Router();
 
 router.post('/onboard', onboardBrandAdmin); // validation du Token ID -> création BRAND_ADMIN
+router.post('/trial', startTrial); // essai gratuit 14 jours, sans Token ID
 router.post('/login', login);
 router.get('/me', protect, me);
-router.post('/distributors', protect, authorize('BRAND_ADMIN'), createDistributor);
-router.get('/distributors', protect, authorize('BRAND_ADMIN'), listDistributors);
+router.post('/activate', protect, activateBrand); // soumission du Token ID acheté -> passe la marque en ACTIVE
+router.post('/distributors', protect, requireActiveBrand, authorize('BRAND_ADMIN'), createDistributor);
+router.get('/distributors', protect, requireActiveBrand, authorize('BRAND_ADMIN'), listDistributors);
 
 module.exports = router;

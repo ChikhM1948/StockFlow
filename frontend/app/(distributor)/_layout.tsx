@@ -28,6 +28,7 @@ export default function DistributorLayout() {
       <Tabs.Screen name="index" options={{ title: brandName, tabBarLabel: 'Mon Stock' }} />
       <Tabs.Screen name="sale-new" options={{ title: 'Nouvelle vente', tabBarLabel: 'Vendre' }} />
       <Tabs.Screen name="sales" options={{ title: 'Mes ventes', tabBarLabel: 'Historique' }} />
+      <Tabs.Screen name="caisse" options={{ title: 'Ma Caisse', tabBarLabel: 'Caisse' }} />
     </Tabs>
   );
 }

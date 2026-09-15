@@ -57,7 +57,7 @@ export default function LoginScreen() {
       <View className="mt-6 items-center">
         <Text className="text-slate-500">Nouvelle marque ?</Text>
         <Link href="/onboarding" className="text-blue-600 font-medium mt-1">
-          Activer mon Token ID
+          Créer ma marque
         </Link>
       </View>
     </Screen>

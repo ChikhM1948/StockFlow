@@ -10,6 +10,13 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<User>;
   onboard: (payload: { tokenId: string; name: string; email: string; password: string }) => Promise<User>;
+  startTrial: (payload: {
+    companyName: string;
+    name: string;
+    email: string;
+    password: string;
+  }) => Promise<User>;
+  activateSubscription: (tokenId: string) => Promise<Brand>;
   logout: () => Promise<void>;
   setBrand: (brand: Brand) => void;
 }
@@ -57,6 +64,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return data.user;
   };
 
+  const startTrial = async (payload: {
+    companyName: string;
+    name: string;
+    email: string;
+    password: string;
+  }) => {
+    const data = await authApi.startTrial(payload);
+    await saveAuthToken(data.authToken);
+    setUser(data.user);
+    setBrandState(data.brand);
+    return data.user;
+  };
+
+  const activateSubscription = async (tokenId: string) => {
+    const data = await authApi.activateSubscription(tokenId);
+    setBrandState(data.brand);
+    return data.brand;
+  };
+
   const logout = async () => {
     await clearAuthToken();
     setUser(null);
@@ -71,6 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: !!user,
       login,
       onboard,
+      startTrial,
+      activateSubscription,
       logout,
       setBrand: setBrandState,
     }),

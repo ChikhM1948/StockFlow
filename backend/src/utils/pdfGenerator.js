@@ -192,6 +192,12 @@ function generateInvoicePdf(sale, brand, distributor) {
     .fontSize(10)
     .text(`Statut paiement : ${sale.paymentStatus}`, { align: 'right' });
 
+  doc.moveDown(3);
+  const sigY = doc.y;
+  doc.font('Helvetica-Bold').fontSize(10).text('Bon pour accord', 320, sigY);
+  doc.font('Helvetica').text('Date et signature du client :', 320, sigY + 15);
+  doc.text('_____________________', 320, sigY + 45);
+
   drawFooter(doc, brand);
   doc.end();
 

@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Brand = require('../models/Brand');
 
 /**
  * Vérifie le JWT et attache req.user (document Mongoose complet, sans password).
@@ -40,4 +41,32 @@ function authorize(...roles) {
   };
 }
 
-module.exports = { protect, authorize };
+/**
+ * Bloque l'accès aux routes métier si l'essai gratuit (14 jours) est terminé
+ * et qu'aucun abonnement n'a été activé (Token ID). Le SUPER_ADMIN n'a pas
+ * de marque et n'est jamais concerné.
+ * À appliquer après `protect` sur les routes métier (produits, ventes,
+ * dispatches, caisse...). Ne pas l'appliquer sur /auth/me ou /auth/activate,
+ * qui doivent rester accessibles pour que l'utilisateur puisse voir son
+ * statut et soumettre un Token ID.
+ */
+async function requireActiveBrand(req, res, next) {
+  if (!req.user.brand) return next(); // SUPER_ADMIN
+
+  const brand = await Brand.findById(req.user.brand);
+  if (!brand) {
+    return res.status(404).json({ message: 'Marque introuvable.' });
+  }
+
+  if (!brand.hasAccess()) {
+    return res.status(402).json({
+      code: 'SUBSCRIPTION_REQUIRED',
+      message: "Votre période d'essai gratuit est terminée. Entrez un Token ID pour continuer.",
+    });
+  }
+
+  req.brand = brand;
+  next();
+}
+
+module.exports = { protect, authorize, requireActiveBrand };

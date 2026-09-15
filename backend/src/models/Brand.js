@@ -30,13 +30,30 @@ const brandSchema = new mongoose.Schema(
 
     token: { type: mongoose.Schema.Types.ObjectId, ref: 'AdminToken', default: null },
 
+    // Repris de AdminToken.maxDevices à la création : nombre d'appareils
+    // pouvant se connecter simultanément avec les comptes de cette marque.
+    maxDevices: { type: Number, min: 1, max: 8, default: 1 },
+
     status: {
       type: String,
-      enum: ['PENDING', 'ACTIVE', 'SUSPENDED'],
+      enum: ['PENDING', 'TRIAL', 'ACTIVE', 'SUSPENDED'],
       default: 'PENDING',
     },
+
+    // Fin de l'essai gratuit (14 jours, sans Token ID). null si non applicable.
+    trialEndsAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
+
+/**
+ * Vrai si la marque a accès à l'application : abonnement actif via Token ID,
+ * ou essai gratuit encore en cours.
+ */
+brandSchema.methods.hasAccess = function hasAccess() {
+  if (this.status === 'ACTIVE') return true;
+  if (this.status === 'TRIAL') return !!this.trialEndsAt && this.trialEndsAt.getTime() > Date.now();
+  return false;
+};
 
 module.exports = mongoose.model('Brand', brandSchema);

@@ -30,6 +30,8 @@ export default function AdminLayout() {
       <Tabs.Screen name="distributors" options={{ title: 'Distributeurs', tabBarLabel: 'Distributeurs' }} />
       <Tabs.Screen name="dispatch-new" options={{ title: 'Bon de sortie', tabBarLabel: 'Sortie' }} />
       <Tabs.Screen name="dispatches" options={{ title: 'Bons de sortie', tabBarLabel: 'Historique' }} />
+      <Tabs.Screen name="sales" options={{ title: 'Ventes en direct', tabBarLabel: 'Ventes' }} />
+      <Tabs.Screen name="caisse" options={{ title: 'Caisse', tabBarLabel: 'Caisse' }} />
       <Tabs.Screen name="settings" options={{ title: 'Ma marque', tabBarLabel: 'Réglages' }} />
     </Tabs>
   );

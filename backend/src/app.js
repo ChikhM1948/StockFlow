@@ -9,6 +9,7 @@ const dispatchRoutes = require('./routes/dispatch.routes');
 const saleRoutes = require('./routes/sale.routes');
 const brandRoutes = require('./routes/brand.routes');
 const distributorStockRoutes = require('./routes/distributorStock.routes');
+const caisseRoutes = require('./routes/caisse.routes');
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/api/dispatches', dispatchRoutes);
 app.use('/api/sales', saleRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/distributor-stocks', distributorStockRoutes);
+app.use('/api/caisse', caisseRoutes);
 
 // 404
 app.use((req, res) => res.status(404).json({ message: 'Route introuvable.' }));

@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { BrandThemeProvider } from '@/context/BrandThemeContext';
 import { Role } from '@/api/types';
+import { brandHasAccess } from '@/utils/subscription';
 
 function roleGroup(role: Role) {
   if (role === 'SUPER_ADMIN') return '/(super-admin)';
@@ -15,7 +16,7 @@ function roleGroup(role: Role) {
 }
 
 function AuthGate() {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, brand, isLoading, isAuthenticated } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -31,11 +32,24 @@ function AuthGate() {
       return;
     }
 
+    // Essai gratuit terminé et aucun abonnement actif : on bloque l'accès aux
+    // écrans métier tant qu'un Token ID n'est pas soumis (voir /auth/activate).
+    if (user!.role !== 'SUPER_ADMIN' && !brandHasAccess(brand)) {
+      if (currentGroup !== 'subscription-expired') {
+        router.replace('/subscription-expired');
+      }
+      return;
+    }
+    if (currentGroup === 'subscription-expired') {
+      router.replace(roleGroup(user!.role) as any);
+      return;
+    }
+
     const expectedGroup = roleGroup(user!.role);
     if (currentGroup !== expectedGroup.slice(1)) {
       router.replace(expectedGroup as any);
     }
-  }, [isLoading, isAuthenticated, segments]);
+  }, [isLoading, isAuthenticated, segments, brand]);
 
   if (isLoading) {
     return (

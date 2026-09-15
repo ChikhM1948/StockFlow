@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { Input } from '@/components/Input';
@@ -7,13 +7,20 @@ import { Button } from '@/components/Button';
 import { useAuth } from '@/context/AuthContext';
 import { extractErrorMessage } from '@/api/client';
 
+type Mode = 'trial' | 'token';
+
 /**
- * Onboarding Marque Blanche : l'utilisateur entre le Token ID reçu du
- * Super Admin. S'il est valide, un compte BRAND_ADMIN est créé et
- * rattaché à sa propre marque (voir POST /api/auth/onboard côté backend).
+ * Deux façons de créer sa marque :
+ * - "trial" : essai gratuit de 14 jours, sans Token ID (POST /api/auth/trial).
+ * - "token" : Token ID déjà reçu du fournisseur (POST /api/auth/onboard).
+ * Passé le délai d'essai sans Token ID soumis, l'app redirige vers
+ * /subscription-expired (voir app/_layout.tsx) jusqu'à activation.
  */
 export default function OnboardingScreen() {
-  const { onboard } = useAuth();
+  const { onboard, startTrial } = useAuth();
+  const [mode, setMode] = useState<Mode>('trial');
+
+  const [companyName, setCompanyName] = useState('');
   const [tokenId, setTokenId] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -25,7 +32,11 @@ export default function OnboardingScreen() {
     setError(null);
     setLoading(true);
     try {
-      await onboard({ tokenId: tokenId.trim(), name, email: email.trim(), password });
+      if (mode === 'trial') {
+        await startTrial({ companyName: companyName.trim(), name, email: email.trim(), password });
+      } else {
+        await onboard({ tokenId: tokenId.trim(), name, email: email.trim(), password });
+      }
     } catch (err) {
       setError(extractErrorMessage(err));
     } finally {
@@ -38,18 +49,47 @@ export default function OnboardingScreen() {
       <View className="mt-16 mb-8">
         <Text className="text-3xl font-bold text-slate-900">Activer ma marque</Text>
         <Text className="text-slate-500 mt-1">
-          Entrez le Token ID fourni par votre fournisseur de solution pour créer votre compte
-          Administrateur.
+          {mode === 'trial'
+            ? 'Démarrez un essai gratuit de 14 jours, sans Token ID.'
+            : 'Entrez le Token ID fourni par votre fournisseur de solution pour créer votre compte Administrateur.'}
         </Text>
       </View>
 
-      <Input
-        label="Token ID"
-        value={tokenId}
-        onChangeText={setTokenId}
-        autoCapitalize="characters"
-        placeholder="BRD-XXXX-XXXX-XXXX"
-      />
+      <View className="flex-row mb-6 rounded-xl overflow-hidden border border-slate-300">
+        <Pressable
+          onPress={() => setMode('trial')}
+          className={`flex-1 py-2.5 items-center ${mode === 'trial' ? 'bg-blue-600' : 'bg-white'}`}
+        >
+          <Text className={mode === 'trial' ? 'text-white font-semibold' : 'text-slate-600'}>
+            Essai gratuit 14 jours
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setMode('token')}
+          className={`flex-1 py-2.5 items-center ${mode === 'token' ? 'bg-blue-600' : 'bg-white'}`}
+        >
+          <Text className={mode === 'token' ? 'text-white font-semibold' : 'text-slate-600'}>
+            J'ai un Token ID
+          </Text>
+        </Pressable>
+      </View>
+
+      {mode === 'trial' ? (
+        <Input
+          label="Nom de l'entreprise"
+          value={companyName}
+          onChangeText={setCompanyName}
+          placeholder="Ex: Ma Marque SARL"
+        />
+      ) : (
+        <Input
+          label="Token ID"
+          value={tokenId}
+          onChangeText={setTokenId}
+          autoCapitalize="characters"
+          placeholder="BRD-XXXX-XXXX-XXXX"
+        />
+      )}
       <Input label="Votre nom" value={name} onChangeText={setName} placeholder="Ex: Jean Dupont" />
       <Input
         label="Email"
@@ -69,7 +109,11 @@ export default function OnboardingScreen() {
 
       {error && <Text className="text-red-500 mb-4">{error}</Text>}
 
-      <Button label="Activer et créer mon compte" onPress={handleSubmit} loading={loading} />
+      <Button
+        label={mode === 'trial' ? "Démarrer l'essai gratuit" : 'Activer et créer mon compte'}
+        onPress={handleSubmit}
+        loading={loading}
+      />
 
       <View className="mt-6 items-center">
         <Text className="text-slate-500">Vous avez déjà un compte ?</Text>

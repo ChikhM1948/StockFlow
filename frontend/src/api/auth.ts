@@ -14,6 +14,26 @@ export async function onboard(payload: {
   return data;
 }
 
+export async function startTrial(payload: {
+  companyName: string;
+  name: string;
+  email: string;
+  password: string;
+}) {
+  const { data } = await apiClient.post<{ authToken: string; user: User; brand: Brand }>(
+    '/auth/trial',
+    payload
+  );
+  return data;
+}
+
+export async function activateSubscription(tokenId: string) {
+  const { data } = await apiClient.post<{ message: string; brand: Brand }>('/auth/activate', {
+    tokenId,
+  });
+  return data;
+}
+
 export async function login(email: string, password: string) {
   const { data } = await apiClient.post<{ authToken: string; user: User }>('/auth/login', {
     email,

@@ -19,7 +19,7 @@ const dispatchSchema = new mongoose.Schema(
   {
     brand: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand', required: true, index: true },
 
-    dispatchNumber: { type: String, required: true, unique: true }, // ex: BS-2026-0001
+    dispatchNumber: { type: String, required: true }, // ex: BS-2026-0001 (unique par marque, cf. index composé ci-dessous)
 
     distributor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     issuedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // BRAND_ADMIN
@@ -38,5 +38,9 @@ const dispatchSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// dispatchNumber est généré par marque (cf. generateDocNumber), donc unique
+// seulement par marque, pas globalement : deux marques ont chacune leur "BS-2026-0001".
+dispatchSchema.index({ brand: 1, dispatchNumber: 1 }, { unique: true });
 
 module.exports = mongoose.model('Dispatch', dispatchSchema);

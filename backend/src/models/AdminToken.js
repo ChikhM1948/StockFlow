@@ -19,6 +19,9 @@ const adminTokenSchema = new mongoose.Schema(
 
     companyName: { type: String, required: true, trim: true },
 
+    // Nombre d'appareils pouvant se connecter simultanément pour cette marque cliente
+    maxDevices: { type: Number, min: 1, max: 8, default: 1 },
+
     brand: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand', required: true },
 
     status: {

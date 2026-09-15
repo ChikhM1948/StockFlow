@@ -6,6 +6,24 @@ import { listProducts } from '@/api/products';
 import { Product } from '@/api/types';
 import { formatMoney } from '@/utils/money';
 import { extractErrorMessage } from '@/api/client';
+import { useAuth } from '@/context/AuthContext';
+import { trialDaysLeft } from '@/utils/subscription';
+
+function TrialBanner() {
+  const { brand } = useAuth();
+  const daysLeft = trialDaysLeft(brand);
+  if (daysLeft === null) return null;
+
+  return (
+    <View className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
+      <Text className="text-amber-800 font-medium">
+        {daysLeft > 0
+          ? `Essai gratuit : ${daysLeft} jour${daysLeft > 1 ? 's' : ''} restant${daysLeft > 1 ? 's' : ''}.`
+          : "Essai gratuit terminé aujourd'hui."}
+      </Text>
+    </View>
+  );
+}
 
 function ProductCard({ product }: { product: Product }) {
   return (
@@ -74,6 +92,8 @@ export default function StockCentralScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <Text className="text-2xl font-bold text-slate-900 mb-4">Stock Central</Text>
+
+      <TrialBanner />
 
       {error && <Text className="text-red-500 mb-4">{error}</Text>}
 

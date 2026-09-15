@@ -22,7 +22,8 @@ export interface Brand {
     taxId: string;
     customText: string;
   };
-  status: 'PENDING' | 'ACTIVE' | 'SUSPENDED';
+  status: 'PENDING' | 'TRIAL' | 'ACTIVE' | 'SUSPENDED';
+  trialEndsAt: string | null;
 }
 
 export interface CustomField {
@@ -87,6 +88,43 @@ export interface SaleDoc {
   totalAmount: number;
   paymentStatus: 'PAID' | 'UNPAID' | 'PARTIAL';
   date: string;
+}
+
+export interface CaisseTotals {
+  count: number;
+  totalAmount: number;
+  amountPaid?: number;
+}
+
+export interface CaisseSummary {
+  daily: CaisseTotals;
+  global: CaisseTotals;
+  range?: CaisseTotals;
+}
+
+export interface CaisseFilters {
+  startDate?: string;
+  endDate?: string;
+  distributorId?: string;
+}
+
+export interface DistributorStockSummary {
+  itemsCount: number;
+  totalQuantity: number;
+  totalValue: number;
+}
+
+export interface DistributorOverview {
+  distributor: { _id: string; name: string; email: string; phone?: string; isActive: boolean };
+  stock: DistributorStockSummary;
+  caisse: CaisseSummary;
+}
+
+export interface DistributorDetail {
+  distributor: { _id: string; name: string; email: string; phone?: string; isActive: boolean };
+  stock: DistributorStockItem[];
+  recentSales: SaleDoc[];
+  caisse: CaisseSummary;
 }
 
 export interface AdminTokenDoc {
