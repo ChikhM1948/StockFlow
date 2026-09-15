@@ -1,6 +1,7 @@
 import '../global.css';
 import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
@@ -31,7 +32,7 @@ function AuthGate() {
     }
 
     const expectedGroup = roleGroup(user!.role);
-    if (currentGroup !== expectedGroup.slice(1, -1)) {
+    if (currentGroup !== expectedGroup.slice(1)) {
       router.replace(expectedGroup as any);
     }
   }, [isLoading, isAuthenticated, segments]);
@@ -49,11 +50,13 @@ function AuthGate() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <BrandThemeProvider>
-        <StatusBar style="dark" />
-        <AuthGate />
-      </BrandThemeProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <BrandThemeProvider>
+          <StatusBar style="dark" />
+          <AuthGate />
+        </BrandThemeProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
