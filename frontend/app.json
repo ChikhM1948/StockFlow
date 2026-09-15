@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Stock Alimentaire",
+    "slug": "stock-alimentaire",
+    "scheme": "stockapp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-status-bar",
+      "expo-sharing"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.stockalimentaire.app"
+    }
+  }
+}
