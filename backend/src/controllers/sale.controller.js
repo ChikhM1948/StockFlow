@@ -4,6 +4,7 @@ const Sale = require('../models/Sale');
 const Brand = require('../models/Brand');
 const generateDocNumber = require('../utils/generateDocNumber');
 const { generateInvoicePdf, generateDeliveryNotePdf } = require('../utils/pdfGenerator');
+const { findOrCreateCustomer } = require('./customer.controller');
 
 /**
  * Enregistre une vente réalisée par un Distributeur auprès d'un client final.
@@ -67,6 +68,7 @@ async function createSale(req, res) {
       }
 
       const saleNumber = await generateDocNumber(brandId, 'SALE');
+      const customerDoc = await findOrCreateCustomer(brandId, customer, session);
 
       // 2. Création de la vente
       const created = await Sale.create(
@@ -75,6 +77,7 @@ async function createSale(req, res) {
             brand: brandId,
             saleNumber,
             distributor: distributor._id,
+            customerId: customerDoc._id,
             customer,
             items: saleItems,
             totalAmount,
@@ -134,4 +137,51 @@ async function listSales(req, res) {
   return res.json({ sales });
 }
 
-module.exports = { createSale, downloadInvoicePdf, downloadDeliveryNotePdf, listSales };
+/**
+ * Enregistre un encaissement ultérieur sur une facture UNPAID/PARTIAL.
+ *
+ * POST /api/sales/:id/payments
+ * body: { amount, note? }
+ */
+async function recordPayment(req, res) {
+  const { amount, note } = req.body;
+  const parsedAmount = Number(amount);
+
+  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+    return res.status(400).json({ message: 'Le montant doit être un nombre positif.' });
+  }
+
+  const filter = { _id: req.params.id, brand: req.user.brand };
+  if (req.user.role === 'DISTRIBUTOR') filter.distributor = req.user._id;
+
+  const sale = await Sale.findOne(filter);
+  if (!sale) {
+    return res.status(404).json({ message: 'Vente introuvable.' });
+  }
+
+  const balance = sale.totalAmount - sale.amountPaid;
+  if (balance <= 0) {
+    return res.status(400).json({ message: 'Cette facture est déjà entièrement payée.' });
+  }
+  if (parsedAmount > balance) {
+    return res
+      .status(400)
+      .json({ message: `Le montant dépasse le solde restant (${balance.toFixed(2)}).` });
+  }
+
+  sale.payments.push({ amount: parsedAmount, note: note || '', recordedBy: req.user._id });
+  sale.amountPaid += parsedAmount;
+  sale.paymentStatus = sale.amountPaid >= sale.totalAmount ? 'PAID' : 'PARTIAL';
+
+  await sale.save();
+
+  return res.json({ sale });
+}
+
+module.exports = {
+  createSale,
+  downloadInvoicePdf,
+  downloadDeliveryNotePdf,
+  listSales,
+  recordPayment,
+};

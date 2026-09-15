@@ -24,6 +24,10 @@ const saleSchema = new mongoose.Schema(
 
     distributor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
 
+    // Référence vers l'entité Customer (historique/solde inter-ventes),
+    // en plus du snapshot ci-dessous utilisé tel quel par la Facture PDF.
+    customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', index: true },
+
     customer: {
       name: { type: String, required: true, trim: true },
       type: {
@@ -44,6 +48,20 @@ const saleSchema = new mongoose.Schema(
       default: 'PAID',
     },
     amountPaid: { type: Number, default: 0 },
+
+    // Historique des encaissements ultérieurs à la création de la vente
+    // (paiement initial inclus dans amountPaid à la création, cf. createSale).
+    payments: {
+      type: [
+        {
+          amount: { type: Number, required: true, min: 0.01 },
+          date: { type: Date, default: Date.now },
+          note: { type: String, default: '' },
+          recordedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        },
+      ],
+      default: [],
+    },
 
     date: { type: Date, default: Date.now },
 

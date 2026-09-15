@@ -3,6 +3,7 @@ const { protect, authorize, requireActiveBrand } = require('../middleware/auth.m
 const {
   getStockCaisse,
   getMyCaisse,
+  getExpensesCaisse,
   listDistributorsCaisse,
   getDistributorDetail,
 } = require('../controllers/caisse.controller');
@@ -13,6 +14,7 @@ router.use(protect, requireActiveBrand);
 
 router.get('/stock', authorize('BRAND_ADMIN'), getStockCaisse);
 router.get('/me', authorize('DISTRIBUTOR'), getMyCaisse);
+router.get('/expenses', authorize('BRAND_ADMIN'), getExpensesCaisse);
 router.get('/distributors', authorize('BRAND_ADMIN'), listDistributorsCaisse);
 router.get('/distributors/:id', authorize('BRAND_ADMIN'), getDistributorDetail);
 

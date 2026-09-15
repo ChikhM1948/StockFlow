@@ -6,6 +6,11 @@ export async function listSales() {
   return data.sales;
 }
 
+export async function recordPayment(saleId: string, payload: { amount: number; note?: string }) {
+  const { data } = await apiClient.post<{ sale: SaleDoc }>(`/sales/${saleId}/payments`, payload);
+  return data.sale;
+}
+
 export async function createSale(payload: {
   customer: { name: string; type: CustomerType; phone?: string; address?: string };
   items: { productId: string; quantity: number; unitPrice: number }[];

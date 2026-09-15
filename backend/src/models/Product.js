@@ -22,6 +22,9 @@ const productSchema = new mongoose.Schema(
     unit: { type: String, required: true, trim: true }, // kg, L, carton, sac...
     price: { type: Number, required: true, min: 0 },
 
+    // Seuil sous lequel l'article est signalé en stock faible (badge Admin)
+    lowStockThreshold: { type: Number, min: 0, default: 10 },
+
     // Champs dynamiques définis par l'Admin
     customFields: { type: [customFieldSchema], default: [] },
 

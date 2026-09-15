@@ -1,12 +1,13 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { listSales } from '@/api/sales';
+import { listSales, recordPayment } from '@/api/sales';
 import { listDistributors } from '@/api/auth';
 import { SaleDoc, User } from '@/api/types';
 import { formatMoney } from '@/utils/money';
 import { extractErrorMessage } from '@/api/client';
 import { useBrandTheme } from '@/context/BrandThemeContext';
+import { PaymentModal } from '@/components/PaymentModal';
 
 const POLL_INTERVAL_MS = 5000;
 
@@ -25,7 +26,9 @@ function distributorName(sale: SaleDoc): string {
   return typeof sale.distributor === 'string' ? sale.distributor : sale.distributor.name;
 }
 
-function SaleCard({ sale }: { sale: SaleDoc }) {
+function SaleCard({ sale, onCollect }: { sale: SaleDoc; onCollect: (sale: SaleDoc) => void }) {
+  const balance = sale.totalAmount - sale.amountPaid;
+
   return (
     <View className="bg-white rounded-xl p-4 mb-3 border border-slate-200">
       <View className="flex-row justify-between items-start">
@@ -52,9 +55,19 @@ function SaleCard({ sale }: { sale: SaleDoc }) {
       <View className="flex-row justify-between items-center mt-2 pt-2 border-t border-slate-100">
         <Text className="text-xs text-slate-400">
           {sale.paymentStatus === 'PAID' ? 'Payé' : sale.paymentStatus === 'PARTIAL' ? 'Partiel' : 'Impayé'}
+          {sale.paymentStatus !== 'PAID' ? ` · solde ${formatMoney(balance)}` : ''}
         </Text>
         <Text className="text-base font-bold text-slate-900">{formatMoney(sale.totalAmount)}</Text>
       </View>
+
+      {sale.paymentStatus !== 'PAID' && (
+        <Pressable
+          onPress={() => onCollect(sale)}
+          className="mt-2 py-2 rounded-lg border border-slate-200 items-center"
+        >
+          <Text className="text-slate-700 text-sm font-medium">Encaisser un paiement</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -68,6 +81,7 @@ export default function AdminSalesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [paymentTarget, setPaymentTarget] = useState<SaleDoc | null>(null);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -99,6 +113,13 @@ export default function AdminSalesScreen() {
     setRefreshing(true);
     await fetchAll();
     setRefreshing(false);
+  };
+
+  const handleRecordPayment = async (amount: number, note: string) => {
+    if (!paymentTarget) return;
+    const updated = await recordPayment(paymentTarget._id, { amount, note });
+    setSales((prev) => prev.map((s) => (s._id === updated._id ? updated : s)));
+    setPaymentTarget(null);
   };
 
   const filteredSales = useMemo(
@@ -161,7 +182,17 @@ export default function AdminSalesScreen() {
       {filteredSales.length === 0 ? (
         <Text className="text-slate-500">Aucune vente pour le moment.</Text>
       ) : (
-        filteredSales.map((s) => <SaleCard key={s._id} sale={s} />)
+        filteredSales.map((s) => <SaleCard key={s._id} sale={s} onCollect={setPaymentTarget} />)
+      )}
+
+      {paymentTarget && (
+        <PaymentModal
+          visible
+          saleNumber={paymentTarget.saleNumber}
+          balance={paymentTarget.totalAmount - paymentTarget.amountPaid}
+          onClose={() => setPaymentTarget(null)}
+          onSubmit={handleRecordPayment}
+        />
       )}
     </ScrollView>
   );

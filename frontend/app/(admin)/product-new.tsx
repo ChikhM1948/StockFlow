@@ -15,6 +15,7 @@ export default function NewProductScreen() {
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
   const [price, setPrice] = useState('');
+  const [lowStockThreshold, setLowStockThreshold] = useState('');
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -24,8 +25,15 @@ export default function NewProductScreen() {
 
     const parsedQuantity = Number(quantity);
     const parsedPrice = Number(price);
+    const parsedThreshold = lowStockThreshold.trim() === '' ? undefined : Number(lowStockThreshold);
 
-    if (!name || !unit || Number.isNaN(parsedQuantity) || Number.isNaN(parsedPrice)) {
+    if (
+      !name ||
+      !unit ||
+      Number.isNaN(parsedQuantity) ||
+      Number.isNaN(parsedPrice) ||
+      (parsedThreshold !== undefined && Number.isNaN(parsedThreshold))
+    ) {
       setError('Merci de renseigner tous les champs obligatoires avec des valeurs valides.');
       return;
     }
@@ -37,12 +45,14 @@ export default function NewProductScreen() {
         quantity: parsedQuantity,
         unit,
         price: parsedPrice,
+        lowStockThreshold: parsedThreshold,
         customFields: customFields.filter((f) => f.key.trim() !== ''),
       });
       setName('');
       setQuantity('');
       setUnit('');
       setPrice('');
+      setLowStockThreshold('');
       setCustomFields([]);
       router.push('/(admin)');
     } catch (err) {
@@ -66,6 +76,13 @@ export default function NewProductScreen() {
       />
       <Input label="Unité" value={unit} onChangeText={setUnit} placeholder="Ex: sac, kg, carton" />
       <Input label="Prix unitaire" value={price} onChangeText={setPrice} keyboardType="numeric" placeholder="Ex: 25000" />
+      <Input
+        label="Seuil de stock faible"
+        value={lowStockThreshold}
+        onChangeText={setLowStockThreshold}
+        keyboardType="numeric"
+        placeholder="Ex: 10 (par défaut)"
+      />
 
       <DynamicFieldsEditor fields={customFields} onChange={setCustomFields} />
 

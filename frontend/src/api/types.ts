@@ -38,6 +38,7 @@ export interface Product {
   quantity: number;
   unit: string;
   price: number;
+  lowStockThreshold: number;
   customFields: CustomField[];
   isActive: boolean;
 }
@@ -49,6 +50,11 @@ export interface DistributorStockItem {
   unit: string;
   quantity: number;
   lastUnitPrice: number;
+  lowStockThreshold: number;
+}
+
+export interface LowStockDistributorStockItem extends DistributorStockItem {
+  distributor: { _id: string; name: string; email: string };
 }
 
 export interface DispatchItem {
@@ -79,15 +85,103 @@ export interface SaleItem {
   total: number;
 }
 
+export interface SalePayment {
+  amount: number;
+  date: string;
+  note: string;
+  recordedBy?: string;
+}
+
 export interface SaleDoc {
   _id: string;
   saleNumber: string;
   distributor: { _id: string; name: string; email: string } | string;
+  customerId?: string;
   customer: { name: string; type: CustomerType; phone: string; address: string };
   items: SaleItem[];
   totalAmount: number;
   paymentStatus: 'PAID' | 'UNPAID' | 'PARTIAL';
+  amountPaid: number;
+  payments: SalePayment[];
   date: string;
+}
+
+export interface Customer {
+  _id: string;
+  brand: string;
+  name: string;
+  type: CustomerType;
+  phone: string;
+  address: string;
+}
+
+export interface CustomerSummary {
+  customer: Customer;
+  salesCount: number;
+  totalAmount: number;
+  amountPaid: number;
+  balance: number;
+  lastSaleDate: string | null;
+}
+
+export interface CustomerDetail {
+  customer: Customer;
+  sales: SaleDoc[];
+  balance: { totalAmount: number; amountPaid: number; balance: number };
+}
+
+export type ReturnReason = 'UNSOLD' | 'DAMAGED' | 'OTHER';
+
+export interface ReturnItem {
+  product: string;
+  name: string;
+  unit: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface ReturnDoc {
+  _id: string;
+  returnNumber: string;
+  distributor: { _id: string; name: string; email: string } | string;
+  items: ReturnItem[];
+  totalAmount: number;
+  reason: ReturnReason;
+  note: string;
+  date: string;
+}
+
+export type ExpenseCategory = 'LOYER' | 'SALAIRE' | 'CARBURANT' | 'FOURNITURES' | 'AUTRE';
+
+export interface ExpenseDoc {
+  _id: string;
+  category: ExpenseCategory;
+  label: string;
+  amount: number;
+  date: string;
+  createdBy: string;
+}
+
+export interface DashboardBestSeller {
+  productId: string;
+  name: string;
+  unit: string;
+  quantity: number;
+  revenue: number;
+}
+
+export interface DashboardRevenuePoint {
+  date: string;
+  count: number;
+  totalAmount: number;
+}
+
+export interface DashboardSummary {
+  range: { startDate: string; endDate: string };
+  bestSellers: DashboardBestSeller[];
+  revenueTrend: DashboardRevenuePoint[];
+  stockValuation: { central: number; distributed: number; total: number };
+  lowStock: { products: number; distributorStockLines: number };
 }
 
 export interface CaisseTotals {

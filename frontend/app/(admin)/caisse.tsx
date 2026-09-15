@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { getStockCaisse, listDistributorsCaisse, getDistributorDetail } from '@/api/caisse';
+import { getExpensesCaisse } from '@/api/expenses';
 import { listDistributors } from '@/api/auth';
 import { CaisseSummary, CaisseTotals, DistributorDetail, DistributorOverview, User } from '@/api/types';
 import { formatMoney } from '@/utils/money';
@@ -122,6 +123,7 @@ function DistributorRow({
 export default function AdminCaisseScreen() {
   const { primaryColor } = useBrandTheme();
   const [stockCaisse, setStockCaisse] = useState<CaisseSummary | null>(null);
+  const [expensesCaisse, setExpensesCaisse] = useState<CaisseSummary | null>(null);
   const [distributors, setDistributors] = useState<DistributorOverview[]>([]);
   const [allDistributors, setAllDistributors] = useState<User[]>([]);
   const [dateFilters, setDateFilters] = useState<DateRange>({});
@@ -137,19 +139,21 @@ export default function AdminCaisseScreen() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [stock, distributorsOverview, distributorsList] = await Promise.all([
+      const [stock, distributorsOverview, distributorsList, expenses] = await Promise.all([
         getStockCaisse(filters),
         listDistributorsCaisse(filters),
         listDistributors(),
+        getExpensesCaisse(dateFilters),
       ]);
       setStockCaisse(stock);
       setDistributors(distributorsOverview);
       setAllDistributors(distributorsList);
+      setExpensesCaisse(expenses);
       setError(null);
     } catch (err) {
       setError(extractErrorMessage(err));
     }
-  }, [filters]);
+  }, [filters, dateFilters]);
 
   useFocusEffect(
     useCallback(() => {
@@ -227,6 +231,47 @@ export default function AdminCaisseScreen() {
             <CaisseCard title="Journalière (aujourd'hui)" totals={stockCaisse.daily} subtitle="bon(s) de sortie" />
           )}
           <CaisseCard title="Globale (depuis le début)" totals={stockCaisse.global} subtitle="bon(s) de sortie" />
+        </>
+      )}
+
+      <Text className="text-lg font-semibold text-slate-900 mt-4 mb-2">Dépenses</Text>
+      {expensesCaisse && (
+        <>
+          {expensesCaisse.range ? (
+            <CaisseCard
+              title={formatDateRangeLabel(dateFilters.startDate, dateFilters.endDate)}
+              totals={expensesCaisse.range}
+              subtitle="dépense(s)"
+            />
+          ) : (
+            <CaisseCard title="Journalière (aujourd'hui)" totals={expensesCaisse.daily} subtitle="dépense(s)" />
+          )}
+          <CaisseCard title="Globale (depuis le début)" totals={expensesCaisse.global} subtitle="dépense(s)" />
+        </>
+      )}
+
+      {expensesCaisse && (
+        <>
+          <Text className="text-lg font-semibold text-slate-900 mt-4 mb-2">Net (ventes - dépenses)</Text>
+          <View className="bg-white rounded-xl p-4 mb-3 border border-slate-200">
+            <Text className="text-slate-500 font-medium mb-1">
+              {expensesCaisse.range ? formatDateRangeLabel(dateFilters.startDate, dateFilters.endDate) : "Aujourd'hui"}
+            </Text>
+            <Text className="text-2xl font-bold text-slate-900">
+              {formatMoney(
+                distributors.reduce((sum, d) => sum + (d.caisse.range ?? d.caisse.daily).totalAmount, 0) -
+                  (expensesCaisse.range ?? expensesCaisse.daily).totalAmount
+              )}
+            </Text>
+          </View>
+          <View className="bg-white rounded-xl p-4 mb-3 border border-slate-200">
+            <Text className="text-slate-500 font-medium mb-1">Global (depuis le début)</Text>
+            <Text className="text-2xl font-bold text-slate-900">
+              {formatMoney(
+                distributors.reduce((sum, d) => sum + d.caisse.global.totalAmount, 0) - expensesCaisse.global.totalAmount
+              )}
+            </Text>
+          </View>
         </>
       )}
 

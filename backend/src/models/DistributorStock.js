@@ -16,6 +16,8 @@ const distributorStockSchema = new mongoose.Schema(
 
     quantity: { type: Number, required: true, min: 0, default: 0 },
     lastUnitPrice: { type: Number, default: 0 },
+    // Snapshot du seuil de stock faible du Product au moment du dernier Dispatch
+    lowStockThreshold: { type: Number, min: 0, default: 10 },
   },
   { timestamps: true }
 );

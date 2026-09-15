@@ -59,7 +59,12 @@ async function createDispatch(req, res) {
           { brand: brandId, distributor: distributor._id, product: product._id },
           {
             $inc: { quantity: line.quantity },
-            $set: { productName: product.name, unit: product.unit, lastUnitPrice: product.price },
+            $set: {
+              productName: product.name,
+              unit: product.unit,
+              lastUnitPrice: product.price,
+              lowStockThreshold: product.lowStockThreshold,
+            },
           },
           { upsert: true, session }
         );

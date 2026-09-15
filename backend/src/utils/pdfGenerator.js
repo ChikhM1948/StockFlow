@@ -247,8 +247,52 @@ function generateDeliveryNotePdf(sale, brand, distributor) {
   });
 }
 
+/**
+ * Génère le PDF d'un Bon de Retour (Distributeur -> Stock Central).
+ */
+function generateReturnPdf(retour, brand, distributor) {
+  const fileName = `${retour.returnNumber}.pdf`;
+  const filePath = path.join(OUTPUT_DIR, fileName);
+
+  const doc = new PDFDocument({ size: 'A4', margin: 40 });
+  const stream = fs.createWriteStream(filePath);
+  doc.pipe(stream);
+
+  drawBrandHeader(doc, brand, 'BON DE RETOUR');
+
+  doc.fontSize(11).fillColor('#000000');
+  doc.text(`N° : ${retour.returnNumber}`);
+  doc.text(`Date : ${formatDate(retour.date)}`);
+  doc.text(`Distributeur : ${distributor?.name || ''}`);
+  doc.text(`Motif : ${retour.reason}`);
+  if (retour.note) doc.text(`Note : ${retour.note}`);
+  doc.moveDown();
+
+  drawItemsTable(doc, retour.items, { unitLabel: 'P.U.' });
+
+  doc.moveDown();
+  doc.font('Helvetica-Bold').fontSize(12).text(`Total : ${formatMoney(retour.totalAmount)}`, { align: 'right' });
+
+  doc.moveDown(3);
+  const sigY = doc.y;
+  doc.font('Helvetica').fontSize(10);
+  doc.text('Signature Distributeur :', 40, sigY);
+  doc.text('_____________________', 40, sigY + 30);
+  doc.text('Signature Admin :', 320, sigY);
+  doc.text('_____________________', 320, sigY + 30);
+
+  drawFooter(doc, brand);
+  doc.end();
+
+  return new Promise((resolve, reject) => {
+    stream.on('finish', () => resolve(filePath));
+    stream.on('error', reject);
+  });
+}
+
 module.exports = {
   generateDispatchPdf,
   generateInvoicePdf,
   generateDeliveryNotePdf,
+  generateReturnPdf,
 };

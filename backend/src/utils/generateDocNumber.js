@@ -3,6 +3,7 @@ const Counter = require('../models/Counter');
 const PREFIXES = {
   DISPATCH: 'BS', // Bon de Sortie
   SALE: 'FAC', // Facture
+  RETURN: 'BR', // Bon de Retour
 };
 
 /**

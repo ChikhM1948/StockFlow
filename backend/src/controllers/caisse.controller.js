@@ -3,10 +3,12 @@ const User = require('../models/User');
 const Sale = require('../models/Sale');
 const Dispatch = require('../models/Dispatch');
 const DistributorStock = require('../models/DistributorStock');
+const Expense = require('../models/Expense');
 const { getStartOfToday, parseDateRangeQuery } = require('../utils/dateRange');
 
 const ZERO_DISPATCH_TOTALS = { count: 0, totalAmount: 0 };
 const ZERO_SALE_TOTALS = { count: 0, totalAmount: 0, amountPaid: 0 };
+const ZERO_EXPENSE_TOTALS = { count: 0, totalAmount: 0 };
 
 /**
  * Agrège un facet { daily: [...], global: [...], range?: [...] } (0 ou 1 doc
@@ -95,6 +97,30 @@ async function computeDistributorCaisse(brandId, distributorId, range = {}) {
   ]);
 
   return readFacet(facet, ZERO_SALE_TOTALS, hasRange);
+}
+
+/**
+ * Caisse des Dépenses (BRAND_ADMIN) : dépenses saisies pour la marque,
+ * journalière + globale (+ période si filtrée). Même forme que
+ * getStockCaisse, pour être affichée/combinée côté "Caisse" avec le
+ * chiffre d'affaires et calculer un net.
+ *
+ * GET /api/caisse/expenses?startDate=&endDate=
+ */
+async function getExpensesCaisse(req, res) {
+  const brandId = req.user.brand;
+  const range = parseDateRangeQuery(req.query);
+  const hasRange = Boolean(range.start || range.end);
+
+  // buildCaisseFacetStages somme un champ `totalAmount` (partagé avec
+  // Dispatch/Sale) ; Expense stocke `amount`, d'où ce alias avant le facet.
+  const [facet] = await Expense.aggregate([
+    { $match: { brand: brandId } },
+    { $set: { totalAmount: '$amount' } },
+    { $facet: buildCaisseFacetStages(range) },
+  ]);
+
+  return res.json({ caisse: readFacet(facet, ZERO_EXPENSE_TOTALS, hasRange) });
 }
 
 /**
@@ -213,4 +239,4 @@ async function getDistributorDetail(req, res) {
   return res.json({ distributor, stock, recentSales, caisse });
 }
 
-module.exports = { getStockCaisse, getMyCaisse, listDistributorsCaisse, getDistributorDetail };
+module.exports = { getStockCaisse, getMyCaisse, getExpensesCaisse, listDistributorsCaisse, getDistributorDetail };
