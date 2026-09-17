@@ -10,13 +10,44 @@ import { extractErrorMessage } from '@/api/client';
 import { formatDateRangeLabel } from '@/utils/dateFilters';
 import { useBrandTheme } from '@/context/BrandThemeContext';
 import { DateRange, DateRangeFilter } from '@/components/DateRangeFilter';
+import {
+  Activity,
+  ArrowDownRight,
+  ArrowUpRight,
+  Boxes,
+  ChevronDown,
+  ChevronUp,
+  CircleDollarSign,
+  Users,
+  Wallet,
+} from 'lucide-react-native';
 
 const POLL_INTERVAL_MS = 10000;
 
-function CaisseCard({ title, totals, subtitle }: { title: string; totals: CaisseTotals; subtitle: string }) {
+type MetricIcon = React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+
+function CaisseCard({
+  title,
+  totals,
+  subtitle,
+  icon: Icon,
+  color,
+}: {
+  title: string;
+  totals: CaisseTotals;
+  subtitle: string;
+  icon: MetricIcon;
+  color: string;
+}) {
   return (
-    <View className="bg-white rounded-xl p-4 mb-3 border border-slate-200">
-      <Text className="text-slate-500 font-medium mb-1">{title}</Text>
+    <View className="bg-white rounded-2xl p-4 mb-3 border border-slate-200 shadow-sm">
+      <View className="flex-row items-start justify-between">
+        <View className="w-10 h-10 rounded-xl items-center justify-center" style={{ backgroundColor: `${color}16` }}>
+          <Icon size={20} color={color} strokeWidth={2.2} />
+        </View>
+        <Text className="text-xs text-slate-400 mt-1">{totals.count} mouvements</Text>
+      </View>
+      <Text className="text-slate-500 font-medium mt-4 mb-1">{title}</Text>
       <Text className="text-2xl font-bold text-slate-900">{formatMoney(totals.totalAmount)}</Text>
       <Text className="text-slate-400 text-xs mt-1">
         {totals.count} {subtitle}
@@ -59,10 +90,12 @@ function DistributorRow({
             <Text className="font-semibold text-slate-900">{overview.distributor.name}</Text>
             <Text className="text-slate-400 text-xs">{overview.distributor.email}</Text>
           </View>
-          <Text className="text-xs text-slate-400">{expanded ? '▲' : '▼'}</Text>
+          <View className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center">
+            {expanded ? <ChevronUp size={17} color="#475569" /> : <ChevronDown size={17} color="#475569" />}
+          </View>
         </View>
 
-        <View className="flex-row justify-between mt-3">
+        <View className="flex-row justify-between mt-4 pt-3 border-t border-slate-100">
           <View>
             <Text className="text-slate-500 text-xs">Stock confié</Text>
             <Text className="font-semibold text-slate-900">{formatMoney(overview.stock.totalValue)}</Text>
@@ -81,7 +114,7 @@ function DistributorRow({
       </Pressable>
 
       {expanded && (
-        <View className="border-t border-slate-100 p-4 bg-slate-50">
+        <View className="border-t border-slate-100 p-4 bg-slate-50/80">
           {loadingDetail && <ActivityIndicator color="#2563EB" />}
 
           {detail && (
@@ -175,6 +208,14 @@ export default function AdminCaisseScreen() {
     setRefreshing(false);
   };
 
+  const periodSales = distributors.reduce(
+    (sum, distributor) => sum + (distributor.caisse.range ?? distributor.caisse.daily).totalAmount,
+    0
+  );
+  const periodExpenses = expensesCaisse?.range ?? expensesCaisse?.daily;
+  const globalSales = distributors.reduce((sum, distributor) => sum + distributor.caisse.global.totalAmount, 0);
+  const globalExpenses = expensesCaisse?.global.totalAmount ?? 0;
+
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-slate-50">
@@ -188,14 +229,31 @@ export default function AdminCaisseScreen() {
       className="flex-1 bg-slate-50 px-4 pt-4"
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Text className="text-2xl font-bold text-slate-900 mb-4">Caisse</Text>
+      <View className="mb-5">
+        <View className="flex-row items-center mb-2">
+          <View className="w-9 h-9 rounded-xl bg-blue-50 items-center justify-center mr-3">
+            <Wallet size={19} color={primaryColor} strokeWidth={2.2} />
+          </View>
+          <Text className="text-xs font-bold uppercase tracking-widest text-slate-400">Pilotage financier</Text>
+        </View>
+        <Text className="text-3xl font-bold text-slate-950">Caisse</Text>
+        <Text className="text-slate-500 mt-1">Suivez les encaissements et la rentabilité en temps réel.</Text>
+      </View>
 
       {error && <Text className="text-red-500 mb-4">{error}</Text>}
 
-      <DateRangeFilter value={dateFilters} onChange={setDateFilters} />
+      <View className="bg-white rounded-2xl p-4 mb-5 border border-slate-200">
+        <View className="flex-row items-center mb-2">
+          <Activity size={16} color="#64748B" />
+          <Text className="text-sm font-semibold text-slate-700 ml-2">Filtres de suivi</Text>
+        </View>
+        <DateRangeFilter value={dateFilters} onChange={setDateFilters} />
 
-      <Text className="text-sm font-medium text-slate-600 mb-2">Distributeur</Text>
-      <View className="flex-row flex-wrap gap-2 mb-4">
+        <View className="flex-row items-center mb-2">
+          <Users size={16} color="#64748B" />
+          <Text className="text-sm font-medium text-slate-600 ml-2">Distributeur</Text>
+        </View>
+        <View className="flex-row flex-wrap gap-2">
         <Pressable
           onPress={() => setSelectedDistributor(null)}
           className="px-3 py-2 rounded-full border"
@@ -216,9 +274,13 @@ export default function AdminCaisseScreen() {
             </Pressable>
           );
         })}
+        </View>
       </View>
 
-      <Text className="text-lg font-semibold text-slate-900 mb-2">Caisse Stock</Text>
+      <View className="flex-row items-center mb-3">
+        <Boxes size={19} color="#2563EB" />
+        <Text className="text-lg font-bold text-slate-900 ml-2">Flux de stock</Text>
+      </View>
       {stockCaisse && (
         <>
           {stockCaisse.range ? (
@@ -226,15 +288,20 @@ export default function AdminCaisseScreen() {
               title={formatDateRangeLabel(dateFilters.startDate, dateFilters.endDate)}
               totals={stockCaisse.range}
               subtitle="bon(s) de sortie"
+              icon={ArrowUpRight}
+              color="#2563EB"
             />
           ) : (
-            <CaisseCard title="Journalière (aujourd'hui)" totals={stockCaisse.daily} subtitle="bon(s) de sortie" />
+            <CaisseCard title="Journalière (aujourd'hui)" totals={stockCaisse.daily} subtitle="bon(s) de sortie" icon={ArrowUpRight} color="#2563EB" />
           )}
-          <CaisseCard title="Globale (depuis le début)" totals={stockCaisse.global} subtitle="bon(s) de sortie" />
+          <CaisseCard title="Globale (depuis le début)" totals={stockCaisse.global} subtitle="bon(s) de sortie" icon={Boxes} color="#4F46E5" />
         </>
       )}
 
-      <Text className="text-lg font-semibold text-slate-900 mt-4 mb-2">Dépenses</Text>
+      <View className="flex-row items-center mt-4 mb-3">
+        <CircleDollarSign size={19} color="#DC2626" />
+        <Text className="text-lg font-bold text-slate-900 ml-2">Dépenses</Text>
+      </View>
       {expensesCaisse && (
         <>
           {expensesCaisse.range ? (
@@ -242,40 +309,44 @@ export default function AdminCaisseScreen() {
               title={formatDateRangeLabel(dateFilters.startDate, dateFilters.endDate)}
               totals={expensesCaisse.range}
               subtitle="dépense(s)"
+              icon={ArrowDownRight}
+              color="#DC2626"
             />
           ) : (
-            <CaisseCard title="Journalière (aujourd'hui)" totals={expensesCaisse.daily} subtitle="dépense(s)" />
+            <CaisseCard title="Journalière (aujourd'hui)" totals={expensesCaisse.daily} subtitle="dépense(s)" icon={ArrowDownRight} color="#DC2626" />
           )}
-          <CaisseCard title="Globale (depuis le début)" totals={expensesCaisse.global} subtitle="dépense(s)" />
+          <CaisseCard title="Globale (depuis le début)" totals={expensesCaisse.global} subtitle="dépense(s)" icon={CircleDollarSign} color="#BE123C" />
         </>
       )}
 
       {expensesCaisse && (
         <>
-          <Text className="text-lg font-semibold text-slate-900 mt-4 mb-2">Net (ventes - dépenses)</Text>
-          <View className="bg-white rounded-xl p-4 mb-3 border border-slate-200">
-            <Text className="text-slate-500 font-medium mb-1">
+          <View className="flex-row items-center mt-4 mb-3">
+            <Wallet size={19} color="#059669" />
+            <Text className="text-lg font-bold text-slate-900 ml-2">Résultat net</Text>
+          </View>
+          <View className="bg-emerald-600 rounded-2xl p-5 mb-3 shadow-sm">
+            <Text className="text-emerald-100 font-medium mb-1">
               {expensesCaisse.range ? formatDateRangeLabel(dateFilters.startDate, dateFilters.endDate) : "Aujourd'hui"}
             </Text>
-            <Text className="text-2xl font-bold text-slate-900">
-              {formatMoney(
-                distributors.reduce((sum, d) => sum + (d.caisse.range ?? d.caisse.daily).totalAmount, 0) -
-                  (expensesCaisse.range ?? expensesCaisse.daily).totalAmount
-              )}
-            </Text>
+            <Text className="text-3xl font-bold text-white">{formatMoney(periodSales - (periodExpenses?.totalAmount ?? 0))}</Text>
+            <Text className="text-emerald-100 text-xs mt-2">Ventes encaissées moins dépenses</Text>
           </View>
-          <View className="bg-white rounded-xl p-4 mb-3 border border-slate-200">
-            <Text className="text-slate-500 font-medium mb-1">Global (depuis le début)</Text>
-            <Text className="text-2xl font-bold text-slate-900">
-              {formatMoney(
-                distributors.reduce((sum, d) => sum + d.caisse.global.totalAmount, 0) - expensesCaisse.global.totalAmount
-              )}
-            </Text>
+          <View className="bg-slate-900 rounded-2xl p-5 mb-3">
+            <Text className="text-slate-400 font-medium mb-1">Global (depuis le début)</Text>
+            <Text className="text-3xl font-bold text-white">{formatMoney(globalSales - globalExpenses)}</Text>
+            <Text className="text-slate-400 text-xs mt-2">Performance cumulée de votre activité</Text>
           </View>
         </>
       )}
 
-      <Text className="text-lg font-semibold text-slate-900 mt-4 mb-2">Distributeurs — temps réel</Text>
+      <View className="flex-row items-center mt-4 mb-3">
+        <Users size={19} color="#7C3AED" />
+        <Text className="text-lg font-bold text-slate-900 ml-2">Distributeurs</Text>
+        <View className="ml-2 bg-violet-100 px-2 py-1 rounded-full">
+          <Text className="text-violet-700 text-xs font-bold">Temps réel</Text>
+        </View>
+      </View>
       {distributors.length === 0 ? (
         <Text className="text-slate-500">Aucun distributeur pour ces filtres.</Text>
       ) : (
