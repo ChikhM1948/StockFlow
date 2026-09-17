@@ -189,3 +189,4 @@ async function listDispatches(req, res) {
 }
 
 module.exports = { createDispatch, addOwnStock, downloadDispatchPdf, listDispatches };
+
