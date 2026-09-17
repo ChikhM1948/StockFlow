@@ -6,6 +6,7 @@ const {
   activateBrand,
   createDistributor,
   listDistributors,
+  updateDistributorPermissions,
   login,
   me,
 } = require('../controllers/auth.controller');
@@ -19,5 +20,12 @@ router.get('/me', protect, me);
 router.post('/activate', protect, activateBrand); // soumission du Token ID acheté -> passe la marque en ACTIVE
 router.post('/distributors', protect, requireActiveBrand, authorize('BRAND_ADMIN'), createDistributor);
 router.get('/distributors', protect, requireActiveBrand, authorize('BRAND_ADMIN'), listDistributors);
+router.patch(
+  '/distributors/:id/permissions',
+  protect,
+  requireActiveBrand,
+  authorize('BRAND_ADMIN'),
+  updateDistributorPermissions
+);
 
 module.exports = router;

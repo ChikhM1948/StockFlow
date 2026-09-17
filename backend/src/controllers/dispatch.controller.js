@@ -8,30 +8,19 @@ const generateDocNumber = require('../utils/generateDocNumber');
 const { generateDispatchPdf } = require('../utils/pdfGenerator');
 
 /**
- * Crée un Bon de Sortie : le BRAND_ADMIN attribue des produits du Stock
- * Central à un Distributeur.
+ * Attribue des produits du Stock Central à un Distributeur et génère le
+ * Bon de Sortie correspondant.
  *
  * Effectue en une transaction :
  *   1. Déduction de la quantité dans le Stock Central (Product)
  *   2. Incrémentation du Stock du Distributeur (DistributorStock)
  *   3. Création du Dispatch + génération du PDF "Bon de Sortie"
  *
- * POST /api/dispatches
- * body: { distributorId, items: [{ productId, quantity }], signatures? }
+ * Utilisé à la fois par le BRAND_ADMIN (createDispatch, distributeur au
+ * choix) et par le DISTRIBUTOR autorisé à s'auto-attribuer du stock
+ * (addOwnStock, distributeur = lui-même).
  */
-async function createDispatch(req, res) {
-  const { distributorId, items, signatures } = req.body;
-  const brandId = req.user.brand;
-
-  if (!distributorId || !Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ message: 'distributorId et items[] sont requis.' });
-  }
-
-  const distributor = await User.findOne({ _id: distributorId, brand: brandId, role: 'DISTRIBUTOR' });
-  if (!distributor) {
-    return res.status(404).json({ message: 'Distributeur introuvable pour cette marque.' });
-  }
-
+async function performDispatch({ brandId, distributor, issuedById, items, signatures }) {
   const session = await mongoose.startSession();
 
   try {
@@ -90,7 +79,7 @@ async function createDispatch(req, res) {
             brand: brandId,
             dispatchNumber,
             distributor: distributor._id,
-            issuedBy: req.user._id,
+            issuedBy: issuedById,
             items: dispatchItems,
             totalAmount,
             signatures: signatures || {},
@@ -107,11 +96,72 @@ async function createDispatch(req, res) {
     dispatch.pdfPath = pdfPath;
     await dispatch.save();
 
+    return { dispatch, pdfPath };
+  } finally {
+    session.endSession();
+  }
+}
+
+/**
+ * Crée un Bon de Sortie : le BRAND_ADMIN attribue des produits du Stock
+ * Central à un Distributeur.
+ *
+ * POST /api/dispatches
+ * body: { distributorId, items: [{ productId, quantity }], signatures? }
+ */
+async function createDispatch(req, res) {
+  const { distributorId, items, signatures } = req.body;
+  const brandId = req.user.brand;
+
+  if (!distributorId || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ message: 'distributorId et items[] sont requis.' });
+  }
+
+  const distributor = await User.findOne({ _id: distributorId, brand: brandId, role: 'DISTRIBUTOR' });
+  if (!distributor) {
+    return res.status(404).json({ message: 'Distributeur introuvable pour cette marque.' });
+  }
+
+  try {
+    const { dispatch, pdfPath } = await performDispatch({
+      brandId,
+      distributor,
+      issuedById: req.user._id,
+      items,
+      signatures,
+    });
     return res.status(201).json({ dispatch, pdfPath });
   } catch (err) {
     return res.status(400).json({ message: err.message || 'Erreur lors de la création du Bon de Sortie.' });
-  } finally {
-    session.endSession();
+  }
+}
+
+/**
+ * Auto-attribution de stock par un DISTRIBUTOR autorisé (User.canAddStock) :
+ * même effet qu'un Bon de Sortie créé par l'admin, mais le distributeur est
+ * à la fois émetteur et destinataire.
+ *
+ * POST /api/dispatches/self
+ * body: { items: [{ productId, quantity }] }
+ */
+async function addOwnStock(req, res) {
+  const { items } = req.body;
+  const brandId = req.user.brand;
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ message: 'items[] est requis.' });
+  }
+
+  try {
+    const { dispatch, pdfPath } = await performDispatch({
+      brandId,
+      distributor: req.user,
+      issuedById: req.user._id,
+      items,
+    });
+    return res.status(201).json({ dispatch, pdfPath });
+  } catch (err) {
+    return res.status(400).json({ message: err.message || "Erreur lors de l'ajout de stock." });
   }
 }
 
@@ -138,4 +188,4 @@ async function listDispatches(req, res) {
   return res.json({ dispatches });
 }
 
-module.exports = { createDispatch, downloadDispatchPdf, listDispatches };
+module.exports = { createDispatch, addOwnStock, downloadDispatchPdf, listDispatches };

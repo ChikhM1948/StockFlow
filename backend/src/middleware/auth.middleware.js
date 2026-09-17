@@ -69,4 +69,18 @@ async function requireActiveBrand(req, res, next) {
   next();
 }
 
-module.exports = { protect, authorize, requireActiveBrand };
+/**
+ * Bloque l'auto-attribution de stock par un distributeur si le BRAND_ADMIN
+ * ne lui en a pas explicitement donné la permission (User.canAddStock).
+ * Sans effet pour les autres rôles.
+ */
+function requireCanAddStock(req, res, next) {
+  if (req.user.role === 'DISTRIBUTOR' && !req.user.canAddStock) {
+    return res.status(403).json({
+      message: "Vous n'avez pas la permission d'ajouter du stock. Contactez votre administrateur.",
+    });
+  }
+  next();
+}
+
+module.exports = { protect, authorize, requireActiveBrand, requireCanAddStock };

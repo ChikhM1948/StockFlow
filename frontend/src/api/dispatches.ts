@@ -18,6 +18,13 @@ export async function createDispatch(payload: {
   return data.dispatch;
 }
 
+export async function addOwnStock(items: { productId: string; quantity: number }[]) {
+  const { data } = await apiClient.post<{ dispatch: DispatchDoc; pdfPath: string }>('/dispatches/self', {
+    items,
+  });
+  return data.dispatch;
+}
+
 export function dispatchPdfUrl(dispatchId: string, baseUrl: string) {
   return `${baseUrl}/dispatches/${dispatchId}/pdf`;
 }

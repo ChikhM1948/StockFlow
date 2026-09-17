@@ -25,6 +25,11 @@ const userSchema = new mongoose.Schema(
     brand: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand', default: null },
 
     isActive: { type: Boolean, default: true },
+
+    // DISTRIBUTOR uniquement : autorisation accordée par le BRAND_ADMIN pour
+    // que le distributeur puisse s'auto-attribuer du stock depuis le Stock
+    // Central, sans passer par un Bon de Sortie créé par l'admin.
+    canAddStock: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

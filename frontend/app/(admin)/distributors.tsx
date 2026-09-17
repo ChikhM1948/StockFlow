@@ -1,14 +1,16 @@
 import React, { useCallback, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Switch, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
-import { createDistributor, listDistributors } from '@/api/auth';
+import { createDistributor, listDistributors, updateDistributorPermissions } from '@/api/auth';
 import { User } from '@/api/types';
 import { extractErrorMessage } from '@/api/client';
+import { useBrandTheme } from '@/context/BrandThemeContext';
 
 export default function DistributorsScreen() {
+  const { primaryColor } = useBrandTheme();
   const [distributors, setDistributors] = useState<User[]>([]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -16,6 +18,7 @@ export default function DistributorsScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const fetchDistributors = useCallback(async () => {
     try {
@@ -30,6 +33,19 @@ export default function DistributorsScreen() {
       fetchDistributors();
     }, [fetchDistributors])
   );
+
+  const handleToggleAddStock = async (distributor: User, value: boolean) => {
+    setError(null);
+    setUpdatingId(distributor._id);
+    try {
+      const updated = await updateDistributorPermissions(distributor._id, value);
+      setDistributors((prev) => prev.map((d) => (d._id === updated._id ? updated : d)));
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   const handleCreate = async () => {
     setError(null);
@@ -80,6 +96,15 @@ export default function DistributorsScreen() {
           <View key={d._id} className="bg-white rounded-xl p-4 mb-2 border border-slate-200">
             <Text className="font-semibold text-slate-900">{d.name}</Text>
             <Text className="text-slate-500">{d.email}</Text>
+            <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-slate-100">
+              <Text className="text-slate-700 flex-1 pr-2">Autoriser l'ajout de stock</Text>
+              <Switch
+                value={d.canAddStock}
+                onValueChange={(value) => handleToggleAddStock(d, value)}
+                disabled={updatingId === d._id}
+                trackColor={{ true: primaryColor }}
+              />
+            </View>
           </View>
         ))
       )}

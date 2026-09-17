@@ -15,6 +15,7 @@ function LogoutButton() {
 
 export default function DistributorLayout() {
   const { primaryColor, brandName } = useBrandTheme();
+  const { user } = useAuth();
 
   return (
     <Tabs
@@ -26,6 +27,15 @@ export default function DistributorLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: brandName, tabBarLabel: 'Mon Stock' }} />
+      <Tabs.Screen
+        name="add-stock"
+        options={{
+          title: 'Ajouter du stock',
+          tabBarLabel: 'Ajouter',
+          // Masqué du menu tant que le BRAND_ADMIN n'a pas accordé la permission.
+          href: user?.canAddStock ? undefined : null,
+        }}
+      />
       <Tabs.Screen name="sale-new" options={{ title: 'Nouvelle vente', tabBarLabel: 'Vendre' }} />
       <Tabs.Screen name="sales" options={{ title: 'Mes ventes', tabBarLabel: 'Historique' }} />
       <Tabs.Screen name="return-new" options={{ title: 'Bon de retour', tabBarLabel: 'Retourner' }} />

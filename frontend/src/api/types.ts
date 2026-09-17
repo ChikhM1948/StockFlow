@@ -8,6 +8,7 @@ export interface User {
   role: Role;
   brand: string | null;
   isActive: boolean;
+  canAddStock: boolean;
 }
 
 export interface Brand {

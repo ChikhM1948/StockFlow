@@ -61,3 +61,10 @@ export async function listDistributors() {
   const { data } = await apiClient.get<{ distributors: User[] }>('/auth/distributors');
   return data.distributors;
 }
+
+export async function updateDistributorPermissions(distributorId: string, canAddStock: boolean) {
+  const { data } = await apiClient.patch<{ user: User }>(`/auth/distributors/${distributorId}/permissions`, {
+    canAddStock,
+  });
+  return data.user;
+}

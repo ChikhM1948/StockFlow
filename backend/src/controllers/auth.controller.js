@@ -227,12 +227,39 @@ async function listDistributors(req, res) {
   return res.json({ distributors: distributors.map((d) => d.toSafeJSON()) });
 }
 
+/**
+ * BRAND_ADMIN accorde ou retire à un distributeur de sa marque la permission
+ * de s'auto-attribuer du stock (voir DistributorStock/canAddStock).
+ * PATCH /api/auth/distributors/:id/permissions
+ * body: { canAddStock: boolean }
+ */
+async function updateDistributorPermissions(req, res) {
+  const { canAddStock } = req.body;
+
+  if (typeof canAddStock !== 'boolean') {
+    return res.status(400).json({ message: 'canAddStock doit être un booléen.' });
+  }
+
+  const distributor = await User.findOneAndUpdate(
+    { _id: req.params.id, brand: req.user.brand, role: 'DISTRIBUTOR' },
+    { canAddStock },
+    { new: true }
+  );
+
+  if (!distributor) {
+    return res.status(404).json({ message: 'Distributeur introuvable pour cette marque.' });
+  }
+
+  return res.json({ user: distributor.toSafeJSON() });
+}
+
 module.exports = {
   onboardBrandAdmin,
   startTrial,
   activateBrand,
   createDistributor,
   listDistributors,
+  updateDistributorPermissions,
   login,
   me,
 };

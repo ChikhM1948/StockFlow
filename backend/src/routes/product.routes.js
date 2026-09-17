@@ -1,5 +1,5 @@
 const express = require('express');
-const { protect, authorize, requireActiveBrand } = require('../middleware/auth.middleware');
+const { protect, authorize, requireActiveBrand, requireCanAddStock } = require('../middleware/auth.middleware');
 const {
   createProduct,
   listProducts,
@@ -9,11 +9,14 @@ const {
 
 const router = express.Router();
 
-router.use(protect, requireActiveBrand, authorize('BRAND_ADMIN'));
+router.use(protect, requireActiveBrand);
 
-router.post('/', createProduct);
-router.get('/', listProducts);
-router.get('/low-stock', listLowStockProducts);
-router.patch('/:id/threshold', updateLowStockThreshold);
+// Un DISTRIBUTOR autorisé (canAddStock) peut consulter le Stock Central
+// pour choisir les articles à s'auto-attribuer.
+router.get('/', authorize('BRAND_ADMIN', 'DISTRIBUTOR'), requireCanAddStock, listProducts);
+
+router.post('/', authorize('BRAND_ADMIN'), createProduct);
+router.get('/low-stock', authorize('BRAND_ADMIN'), listLowStockProducts);
+router.patch('/:id/threshold', authorize('BRAND_ADMIN'), updateLowStockThreshold);
 
 module.exports = router;
