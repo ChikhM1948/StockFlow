@@ -29,7 +29,7 @@ const tokenStorage = Platform.OS === 'web' ? webStorage : SecureStore;
 // depuis un appareil/émulateur physique). Voir .env.example.
 export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api';
 
-export const apiClient = axios.create({ baseURL: API_URL });
+export const apiClient = axios.create({ baseURL: API_URL, timeout: 10000 });
 
 apiClient.interceptors.request.use(async (config) => {
   const token = await tokenStorage.getItemAsync(TOKEN_KEY);
