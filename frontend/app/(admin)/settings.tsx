@@ -8,15 +8,16 @@ import { useAuth } from '@/context/AuthContext';
 import { useBrandTheme } from '@/context/BrandThemeContext';
 import { updateMyBrand } from '@/api/brand';
 import { extractErrorMessage } from '@/api/client';
+import { Check, FileText, ImagePlus, MapPin, Palette, ReceiptText, Settings2, ShieldCheck } from 'lucide-react-native';
 
 const COLOR_PRESETS = ['#2563EB', '#DC2626', '#16A34A', '#F59E0B', '#7C3AED', '#0F172A'];
 
 export default function BrandSettingsScreen() {
   const { brand } = useAuth();
-  const { refreshBrand } = useBrandTheme();
+  const { primaryColor, refreshBrand } = useBrandTheme();
 
   const [name, setName] = useState(brand?.name || '');
-  const [primaryColor, setPrimaryColor] = useState(brand?.theme.primaryColor || '#2563EB');
+  const [selectedColor, setSelectedColor] = useState(brand?.theme.primaryColor || '#2563EB');
   const [logoUrl, setLogoUrl] = useState<string | null>(brand?.logoUrl || null);
   const [addressLine, setAddressLine] = useState(brand?.invoiceFooter.addressLine || '');
   const [phone, setPhone] = useState(brand?.invoiceFooter.phone || '');
@@ -29,7 +30,7 @@ export default function BrandSettingsScreen() {
   useEffect(() => {
     if (!brand) return;
     setName(brand.name);
-    setPrimaryColor(brand.theme.primaryColor);
+    setSelectedColor(brand.theme.primaryColor);
     setLogoUrl(brand.logoUrl);
     setAddressLine(brand.invoiceFooter.addressLine);
     setPhone(brand.invoiceFooter.phone);
@@ -65,7 +66,7 @@ export default function BrandSettingsScreen() {
       await updateMyBrand({
         name,
         logoUrl: logoUrl || undefined,
-        theme: { primaryColor },
+        theme: { primaryColor: selectedColor },
         invoiceFooter: { addressLine, phone, taxId, customText },
       });
       await refreshBrand();
@@ -79,44 +80,97 @@ export default function BrandSettingsScreen() {
 
   return (
     <Screen>
-      <Text className="text-2xl font-bold text-slate-900 mb-4 mt-2">Personnalisation de ma marque</Text>
-
-      <Pressable onPress={pickLogo} className="items-center mb-6">
-        {logoUrl ? (
-          <Image source={{ uri: logoUrl }} className="w-24 h-24 rounded-xl mb-2" resizeMode="contain" />
-        ) : (
-          <View className="w-24 h-24 rounded-xl bg-slate-200 mb-2 items-center justify-center">
-            <Text className="text-slate-500 text-xs text-center">Aucun{'\n'}logo</Text>
+      <View className="pt-2 mb-5">
+        <View className="flex-row items-center">
+          <View className="w-11 h-11 rounded-2xl items-center justify-center mr-3" style={{ backgroundColor: primaryColor }}>
+            <Settings2 size={23} color="#FFFFFF" strokeWidth={2.1} />
           </View>
-        )}
-        <Text className="text-blue-600 font-medium">Changer le logo</Text>
-      </Pressable>
-
-      <Input label="Nom de l'entreprise" value={name} onChangeText={setName} />
-
-      <Text className="text-sm font-medium text-slate-600 mb-2">Couleur principale de l'interface</Text>
-      <View className="flex-row flex-wrap gap-2 mb-2">
-        {COLOR_PRESETS.map((color) => (
-          <Pressable
-            key={color}
-            onPress={() => setPrimaryColor(color)}
-            className="w-10 h-10 rounded-full items-center justify-center"
-            style={{ backgroundColor: color, borderWidth: primaryColor === color ? 3 : 0, borderColor: '#0F172A' }}
-          />
-        ))}
+          <View className="flex-1">
+            <Text className="text-2xl font-bold text-slate-950">Personnalisation</Text>
+            <Text className="text-slate-500 mt-0.5">Adaptez votre marque et vos documents commerciaux.</Text>
+          </View>
+        </View>
       </View>
-      <Input label="Ou code couleur (hex)" value={primaryColor} onChangeText={setPrimaryColor} autoCapitalize="none" />
 
-      <Text className="text-lg font-semibold text-slate-900 mt-4 mb-2">Pied de page des factures</Text>
-      <Input label="Adresse" value={addressLine} onChangeText={setAddressLine} />
-      <Input label="Téléphone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-      <Input label="Identifiant fiscal (NIF / RCCM...)" value={taxId} onChangeText={setTaxId} />
-      <Input label="Texte libre" value={customText} onChangeText={setCustomText} />
+      <View className="bg-white rounded-2xl border border-slate-200 p-4 mb-4">
+        <View className="flex-row items-center mb-1">
+          <ShieldCheck size={18} color={primaryColor} strokeWidth={2.2} />
+          <Text className="text-base font-bold text-slate-900 ml-2">Identité de l'entreprise</Text>
+        </View>
+        <Text className="text-slate-500 text-sm mb-4">Ces informations apparaissent dans votre espace et vos factures.</Text>
 
-      {error && <Text className="text-red-500 mb-4">{error}</Text>}
-      {success && <Text className="text-green-600 mb-4">Modifications enregistrées.</Text>}
+        <Pressable onPress={pickLogo} className="flex-row items-center bg-slate-50 rounded-2xl p-3 mb-4">
+          {logoUrl ? (
+            <Image source={{ uri: logoUrl }} className="w-20 h-20 rounded-xl bg-white" resizeMode="contain" />
+          ) : (
+            <View className="w-20 h-20 rounded-xl bg-blue-50 items-center justify-center">
+              <ImagePlus size={26} color="#2563EB" strokeWidth={1.8} />
+              <Text className="text-blue-700 text-xs font-semibold mt-1">Ajouter</Text>
+            </View>
+          )}
+          <View className="flex-1 ml-3">
+            <Text className="text-slate-900 font-bold">Logo de votre marque</Text>
+            <Text className="text-slate-500 text-sm mt-1">Touchez pour {logoUrl ? 'remplacer' : 'choisir'} votre logo.</Text>
+          </View>
+          <ImagePlus size={18} color="#64748B" />
+        </Pressable>
 
-      <Button label="Enregistrer" onPress={handleSave} loading={loading} />
+        <Input label="Nom de l'entreprise" value={name} onChangeText={setName} placeholder="Ex: Distribution Plus" />
+      </View>
+
+      <View className="bg-white rounded-2xl border border-slate-200 p-4 mb-4">
+        <View className="flex-row items-center mb-1">
+          <Palette size={18} color="#D97706" strokeWidth={2.2} />
+          <Text className="text-base font-bold text-slate-900 ml-2">Couleur de l'interface</Text>
+        </View>
+        <Text className="text-slate-500 text-sm mb-4">Choisissez la couleur principale de votre espace.</Text>
+        <View className="flex-row flex-wrap gap-3 mb-4">
+          {COLOR_PRESETS.map((color) => {
+            const selected = selectedColor.toUpperCase() === color.toUpperCase();
+            return (
+              <Pressable
+                key={color}
+                onPress={() => setSelectedColor(color)}
+                className="w-11 h-11 rounded-full items-center justify-center"
+                style={{ backgroundColor: color, borderWidth: selected ? 3 : 0, borderColor: '#FFFFFF' }}
+              >
+                {selected && <Check size={18} color="#FFFFFF" strokeWidth={3} />}
+              </Pressable>
+            );
+          })}
+        </View>
+        <Input label="Ou code couleur (hex)" value={selectedColor} onChangeText={setSelectedColor} autoCapitalize="none" placeholder="#2563EB" />
+      </View>
+
+      <View className="bg-white rounded-2xl border border-slate-200 p-4 mb-5">
+        <View className="flex-row items-center mb-1">
+          <ReceiptText size={18} color="#2563EB" strokeWidth={2.2} />
+          <Text className="text-base font-bold text-slate-900 ml-2">Pied de page des factures</Text>
+        </View>
+        <Text className="text-slate-500 text-sm mb-4">Ajoutez les coordonnées affichées au bas de vos documents.</Text>
+        <View className="flex-row items-center mb-2">
+          <MapPin size={15} color="#64748B" />
+          <Text className="text-slate-600 text-xs font-semibold ml-1.5">Coordonnées</Text>
+        </View>
+        <Input label="Adresse" value={addressLine} onChangeText={setAddressLine} placeholder="Adresse de l'entreprise" />
+        <Input label="Téléphone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+225 ..." />
+        <View className="flex-row items-center mb-2 mt-1">
+          <FileText size={15} color="#64748B" />
+          <Text className="text-slate-600 text-xs font-semibold ml-1.5">Informations administratives</Text>
+        </View>
+        <Input label="Identifiant fiscal (NIF / RCCM...)" value={taxId} onChangeText={setTaxId} placeholder="Optionnel" />
+        <Input label="Texte libre" value={customText} onChangeText={setCustomText} placeholder="Merci pour votre confiance" />
+      </View>
+
+      {error && <Text className="text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-3 mb-4">{error}</Text>}
+      {success && (
+        <View className="flex-row items-center bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-3 mb-4">
+          <Check size={17} color="#16A34A" strokeWidth={2.5} />
+          <Text className="text-emerald-700 font-semibold ml-2">Modifications enregistrées.</Text>
+        </View>
+      )}
+
+      <Button label="Enregistrer les modifications" onPress={handleSave} loading={loading} />
     </Screen>
   );
 }
